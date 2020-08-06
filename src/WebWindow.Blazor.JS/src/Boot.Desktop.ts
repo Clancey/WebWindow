@@ -20,7 +20,13 @@ function boot() {
     },
     endInvokeJSFromDotNet: (callId: number, succeeded: boolean, resultOrError: any) => {
       ipc.send('EndInvokeJSFromDotNet', [callId, succeeded, resultOrError]);
-    }
+      },
+      invokeDotNetFromJS: (assemblyName, methodIdentifier, dotNetObjectId, argsJson) => {
+          var request = new XMLHttpRequest();
+          request.open('GET', 'ipc://dotnetInvoke?assemblyName=' + assemblyName + '&methodIdentifier=' + methodIdentifier + '&dotnetObjectId=' + dotNetObjectId + '&argsJson=' + argsJson, false);  // `false` makes the request synchronous
+          request.send(null);
+          return request.responseText;
+      }
   });
 
   navigationManagerFunctions.enableNavigationInterception();

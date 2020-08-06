@@ -12,6 +12,9 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
+using System.Linq;
+using System.Collections.Specialized;
 
 namespace WebWindows.Blazor
 {
@@ -54,6 +57,23 @@ namespace WebWindows.Blazor
                     contentType = GetContentType(url);
                     return SupplyFrameworkFile(url);
                 });
+
+                options.SchemeHandlers.Add ("ipc", (string url, out string contentType) => {
+                    var uri = new Uri (url);
+                    var query = HttpUtility.ParseQueryString (uri.Query);
+                    string assemblyName = query ["assemblyName"];
+                    var methodIdentifier = query ["methodIdentifier"];
+                    var dotNetObjectIdString = query ["dotNetObjectId"];
+                    var argsJson = query ["argsJson"];
+                    long? dotNetObjectId = default;
+                    if (!string.IsNullOrWhiteSpace (dotNetObjectIdString) && long.TryParse (dotNetObjectIdString, out var dl))
+                        dotNetObjectId = dl;
+                    var callInfo = new DotNetInvocationInfo (assemblyName, methodIdentifier, dotNetObjectId ?? default, callId: null);
+                    var result = DotNetDispatcher.Invoke (DesktopJSRuntime, callInfo, argsJson);
+                    contentType = "text/plain";
+                    return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(result)) ;
+                });
+
             });
 
             CancellationTokenSource appLifetimeCts = new CancellationTokenSource();
